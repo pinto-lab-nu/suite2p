@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import numpy as np
+import xml.etree.ElementTree as et
 from natsort import natsorted
 
 
@@ -265,7 +266,7 @@ def init_ops(ops):
             ops['save_path'] = os.path.join(ops['save_path0'], ops['save_folder'], 'plane%d'%j)
         else:
             ops['save_path'] = os.path.join(ops['save_path0'], 'suite2p', 'plane%d'%j)
-        
+
         if ('fast_disk' not in ops) or len(ops['fast_disk'])==0:
             ops['fast_disk'] = ops['save_path0'].copy()
         fast_disk = os.path.join(ops['fast_disk'], 'suite2p', 'plane%d'%j)
@@ -309,3 +310,63 @@ def get_suite2p_path(path: Path) -> Path:
     else:
         raise FileNotFoundError("The `suite2p` folder was not found in path")
     return new_path
+
+
+def frame_info_from_bruker_xml(xmlfile):
+    xml_data    = et.parse(xmlfile)
+    root        = xml_data.getroot()
+    sequence    = root.findall('./Sequence')
+    channel_num = []
+    cycle_num   = []
+    file_name   = []
+    frame_time  = []
+    pos         = []
+    for [iCycle, cycle] in enumerate(sequence):
+
+        # time stamp
+        for frame in cycle.findall('./Frame'):
+            frame_time.append(float(frame.attrib['relativeTime']))
+
+        # cycle and channel info
+        for frame in cycle.findall('./Frame/File'):
+            file_name.append(frame.attrib['filename'])
+            channel_num.append(int(frame.attrib['channel']))
+            cycle_num.append(iCycle)
+
+        # find x-y-z position for each frame
+        for attr in cycle.findall('./Frame/PVStateShard/PVStateValue'):
+            this_pos = []
+            if attr.attrib['key'] == 'positionCurrent':
+                for subattr in attr.findall('./SubindexedValues'):
+                    for ipos in subattr.findall('./SubindexedValue'):
+                        this_pos.append(float(ipos.get('value')))
+                pos.append(this_pos)
+
+    # define fov number based on the unique combination of x-y-z coordinates
+    posa        = np.array(pos)
+    unique_locs = np.unique(posa,axis=0)
+    num_coord   = np.size(unique_locs,axis=1)
+    num_fov     = np.size(unique_locs,axis=0)
+    fov_id      = []
+
+    for iFrame in range(len(pos)):
+        for iFov in range(num_fov):
+            if np.sum(posa[iFrame]==unique_locs[iFov]) == num_coord:
+                fov_id.append(iFov)
+                continue
+
+    # create dictionary output
+    frame_info = {
+                 'xml_filename'     : xmlfile,       \
+                 'frame_file_names' : file_name,     \
+                 'frame_times'      : frame_time,    \
+                 'channel_ids'      : channel_num,   \
+                 'fov_ids'          : fov_id,        \
+                 'cycle_ids'        : cycle_num,     \
+                 'frame_time'       : frame_time,    \
+                 'fov_unique_pos'   : unique_locs,   \
+                 'num_fov'          : num_fov,       \
+                 'num_channel'      : len(list(set(channel_num)))
+                 }
+
+    return frame_info
