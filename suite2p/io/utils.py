@@ -243,10 +243,20 @@ def init_ops(ops):
             adds fields 'save_path0', 'reg_file'
             (depending on ops: 'raw_file', 'reg_file_chan2', 'raw_file_chan2')
 
+    modified by LP to read nplanes and nchannels directly from bruker xml
+
     """
 
-    nplanes = ops['nplanes']
-    nchannels = ops['nchannels']
+    if ops['bruker']:
+        xmlfile   = infer_bruker_xml_filename(ops['save_path0'])
+        frameinfo = frame_info_from_bruker_xml(xmlfile)
+        nplanes   = frame_info['num_fov']
+        nchannels = frame_info['num_channel']
+
+    else:
+        nplanes = ops['nplanes']
+        nchannels = ops['nchannels']
+
     if 'lines' in ops:
         lines = ops['lines']
     if 'iplane' in ops:
@@ -313,6 +323,10 @@ def get_suite2p_path(path: Path) -> Path:
 
 
 def frame_info_from_bruker_xml(xmlfile):
+    """
+    Reads bruker xml file and returns frame info.
+    added by LP in sep 2022
+    """
     xml_data    = et.parse(xmlfile)
     root        = xml_data.getroot()
     sequence    = root.findall('./Sequence')
@@ -357,16 +371,33 @@ def frame_info_from_bruker_xml(xmlfile):
 
     # create dictionary output
     frame_info = {
-                 'xml_filename'     : xmlfile,       \
-                 'frame_file_names' : file_name,     \
-                 'frame_times'      : frame_time,    \
-                 'channel_ids'      : channel_num,   \
-                 'fov_ids'          : fov_id,        \
-                 'cycle_ids'        : cycle_num,     \
-                 'frame_time'       : frame_time,    \
-                 'fov_unique_pos'   : unique_locs,   \
-                 'num_fov'          : num_fov,       \
+                 'xml_filename'     : xmlfile,                 \
+                 'frame_file_names' : file_name,               \
+                 'frame_times'      : np.array(frame_time),    \
+                 'channel_ids'      : np.array(channel_num),   \
+                 'fov_ids'          : np.array(fov_id),        \
+                 'cycle_ids'        : np.array(cycle_num),     \
+                 'fov_unique_pos'   : unique_locs,             \
+                 'num_fov'          : num_fov,                 \
                  'num_channel'      : len(list(set(channel_num)))
                  }
 
     return frame_info
+
+def infer_bruker_xml_filename(recpath):
+    """
+    Infers bruker xml file name based on path.
+    added by LP in sep 2022
+    """
+
+    # bruker xmls have the same name as their parent directory by default
+    if recpath.find('/') == -1:
+        if recpath.rfind('\') == len(recpath)-1:
+            recpath = recpath[:-1]
+        xmlname = '{}.xml'.format(recpath[recpath.rfind('\')+1:])
+    else:
+        if recpath.rfind('/') == len(recpath)-1:
+            recpath = recpath[:-1]
+        xmlname = '{}.xml'.format(recpath[recpath.rfind('/')+1:])
+
+    return xmlname

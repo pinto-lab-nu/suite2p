@@ -11,7 +11,7 @@ def default_ops():
         'fast_disk': [],  # used to store temporary binary file, defaults to save_path0
         'delete_bin': False,  # whether to delete binary file after processing
         'mesoscan': False,  # for reading in scanimage mesoscope files
-        'bruker': False,  # whether or not single page BRUKER tiffs!
+        'bruker': True,  # whether or not single page BRUKER tiffs!
         'bruker_bidirectional': False, # bidirectional multiplane in bruker: 0, 1, 2, 2, 1, 0 (True) vs 0, 1, 2, 0, 1, 2 (False)
         'h5py': [],  # take h5py as input (deactivates data_path)
         'h5py_key': 'data',  #key in h5py where data array is stored
@@ -26,7 +26,7 @@ def default_ops():
         # main settings
         'nplanes' : 1,  # each tiff has these many planes in sequence
         'nchannels' : 1,  # each tiff has these many channels per plane
-        'functional_chan' : 1,  # this channel is used to extract functional ROIs (1-based)
+        'functional_chan' : 2,  # this channel is used to extract functional ROIs (1-based)
         'tau':  1.,  # this is the main parameter for deconvolution
         'fs': 10.,  # sampling rate (PER PLANE e.g. for 12 plane recordings it will be around 2.5)
         'force_sktiff': False, # whether or not to use scikit-image for tiff reading
@@ -48,8 +48,8 @@ def default_ops():
 
         # registration settings
         'do_registration': True,  # whether to register data (2 forces re-registration)
-        'two_step_registration': False, # whether or not to run registration twice (useful for low SNR data). Set keep_movie_raw to True if setting this parameter to True. 
-        'keep_movie_raw': False, # whether to keep binary file of non-registered frames. 
+        'two_step_registration': False, # whether or not to run registration twice (useful for low SNR data). Set keep_movie_raw to True if setting this parameter to True.
+        'keep_movie_raw': False, # whether to keep binary file of non-registered frames.
         'nimg_init': 300,  # subsampled frames for finding reference image
         'batch_size': 500,  # number of frames per batch
         'maxregshift': 0.1,  # max allowed registration shift, as a fraction of frame max(width and height)
@@ -63,7 +63,7 @@ def default_ops():
         'norm_frames': True, # normalize frames when detecting shifts
         'force_refImg': False, # if True, use refImg stored in ops if available
         'pad_fft': False, # if True, pads image during FFT part of registration
-        
+
         # non rigid registration settings
         'nonrigid': True,  # whether to use nonrigid registration
         'block_size': [128, 128],  # block size to register (** keep this a multiple of 2 **)
@@ -109,7 +109,7 @@ def default_ops():
         'use_builtin_classifier': False,  # whether or not to use built-in classifier for cell detection (overrides
                                          # classifier specified in classifier_path if set to True)
         'classifier_path': '', # path to classifier
-        
+
         # channel 2 detection settings (stat[n]['chan2'], stat[n]['not_chan2'])
         'chan2_thres': 0.65,  # minimum for detection of brightness on channel 2
 

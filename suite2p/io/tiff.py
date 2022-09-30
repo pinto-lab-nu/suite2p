@@ -123,7 +123,7 @@ def tiff_to_binary(ops):
     ops = ops1[0]
     # try tiff readers
     use_sktiff = True if ops['force_sktiff'] else use_sktiff_reader(fs[0], batch_size=ops1[0].get('batch_size'))
-    
+
     batch_size = ops['batch_size']
     batch_size = nplanes*nchannels*math.ceil(batch_size/(nplanes*nchannels))
 
@@ -162,7 +162,7 @@ def tiff_to_binary(ops):
                 im = (im // 2).astype(np.int16)
             elif im.dtype.type != np.int16:
                 im = im.astype(np.int16)
-            
+
             if im.shape[0] > nfr:
                 im = im[:nfr, :, :]
             nframes = im.shape[0]
@@ -393,20 +393,34 @@ def ome_to_binary(ops):
 
     # open all binary files for writing and look for tiffs in all requested folders
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
-    ops = ops1[0]
+    isbruker = ops['bruker']
+    recpath  = ops['save_path0']
+    ops      = ops1[0]
 
     fs_Ch1, fs_Ch2 = [], []
-    for f in fs:
-        if f.find('Ch1')>-1:
-            if ops['functional_chan'] == 1:
-                fs_Ch1.append(f)
-            else:
-                fs_Ch2.append(f)
+    if isbruker:
+        xmlfile   = utils.infer_bruker_xml_filename(ops['save_path0'])
+        frameinfo = utils.frame_info_from_bruker_xml(xmlfile)
+        if ops['functional_chan'] == 1:
+            fs_Ch1   = f[frameInfo['channel_ids']==1]
+            fs_Ch2   = f[frameInfo['channel_ids']==2]
+            func_idx = frameInfo['channel_ids']==1
         else:
-            if ops['functional_chan'] == 1:
-                fs_Ch2.append(f)
+            fs_Ch1   = f[frameInfo['channel_ids']==2]
+            fs_Ch2   = f[frameInfo['channel_ids']==1]
+            func_idx = frameInfo['channel_ids']==2
+    else:
+        for f in fs:
+            if f.find('Ch1')>-1:
+                if ops['functional_chan'] == 1:
+                    fs_Ch1.append(f)
+                else:
+                    fs_Ch2.append(f)
             else:
-                fs_Ch1.append(f)
+                if ops['functional_chan'] == 1:
+                    fs_Ch2.append(f)
+                else:
+                    fs_Ch1.append(f)
 
     if len(fs_Ch2)==0:
         ops1[0]['nchannels'] = 1
@@ -415,7 +429,7 @@ def ome_to_binary(ops):
     # loop over all tiffs
     with ScanImageTiffReader(fs_Ch1[0]) as tif:
         im0 = tif.data()
-    
+
     for ops1_0 in ops1:
         ops1_0['nframes'] = 0
         ops1_0['frames_per_folder'][0] = 0
@@ -423,24 +437,27 @@ def ome_to_binary(ops):
         if nchannels > 1:
             ops1_0['meanImg_chan2'] = np.zeros(im0.shape, np.float32)
 
-    bruker_bidirectional = ops.get('bruker_bidirectional', False)
-    iplanes = np.arange(0, nplanes)
-    if not bruker_bidirectional:
-        iplanes = np.tile(iplanes[np.newaxis, :], 
-                          int(np.ceil(len(fs_Ch1)/nplanes))).flatten()
-        iplanes = iplanes[:len(fs_Ch1)]
+    if isbruker:
+        iplanes = frame_info['fov_ids'][func_idx]
     else:
-        iplanes = np.hstack((iplanes, iplanes[::-1]))
-        iplanes = np.tile(iplanes[np.newaxis, :], 
-                          int(np.ceil(len(fs_Ch1)/(2*nplanes)))).flatten()
-        iplanes = iplanes[:len(fs_Ch1)]
-        
+        bruker_bidirectional = ops.get('bruker_bidirectional', False)
+        iplanes = np.arange(0, nplanes)
+        if not bruker_bidirectional:
+            iplanes = np.tile(iplanes[np.newaxis, :],
+                              int(np.ceil(len(fs_Ch1)/nplanes))).flatten()
+            iplanes = iplanes[:len(fs_Ch1)]
+        else:
+            iplanes = np.hstack((iplanes, iplanes[::-1]))
+            iplanes = np.tile(iplanes[np.newaxis, :],
+                              int(np.ceil(len(fs_Ch1)/(2*nplanes)))).flatten()
+            iplanes = iplanes[:len(fs_Ch1)]
+
     for ik, file in enumerate(fs_Ch1):
         # read tiff
         with ScanImageTiffReader(file) as tif:
             im = tif.data()
         if im.dtype.type == np.uint16:
-            im = (im // 2)  
+            im = (im // 2)
         im = im.astype(np.int16)
 
         # write to binary
@@ -450,17 +467,17 @@ def ome_to_binary(ops):
         ops1[ix]['meanImg'] += im.astype(np.float32)
         reg_file[ix].write(bytearray(im))
         gc.collect()
-        
+
         if ik % 1000 == 0:
             print('%d frames of binary, time %0.2f sec.' % (ik, time.time() - t0))
-    
+
     if nchannels > 1:
         for ik, file in enumerate(fs_Ch2):
             with ScanImageTiffReader(file) as tif:
                 im = tif.data()
             if im.dtype.type == np.uint16:
                 im = (im // 2)
-                
+
             im = im.astype(np.int16)
             ix = iplanes[ik]
             ops1[ix]['meanImg_chan2'] += im.astype(np.float32)
