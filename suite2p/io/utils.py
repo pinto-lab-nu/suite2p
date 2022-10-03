@@ -392,9 +392,9 @@ def infer_bruker_xml_filename(recpath):
 
     # bruker xmls have the same name as their parent directory by default
     if recpath.find('/') == -1:
-        if recpath.rfind('\') == len(recpath)-1:
+        if recpath.rfind('\\') == len(recpath)-1:
             recpath = recpath[:-1]
-        xmlname = '{}.xml'.format(recpath[recpath.rfind('\')+1:])
+        xmlname = '{}.xml'.format(recpath[recpath.rfind('\\')+1:])
     else:
         if recpath.rfind('/') == len(recpath)-1:
             recpath = recpath[:-1]
