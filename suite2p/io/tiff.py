@@ -112,15 +112,19 @@ def tiff_to_binary(ops):
     """
 
     t0=time.time()
+
+    # copy ops to list where each element is ops for each plane
     # copy ops to list where each element is ops for each plane
     ops1 = utils.init_ops(ops)
     nplanes = ops1[0]['nplanes']
     nchannels = ops1[0]['nchannels']
 
-    # open all binary files for writing
-    # look for tiffs in all requested folders
+    # open all binary files for writing and look for tiffs in all requested folders
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
-    ops = ops1[0]
+    isbruker = ops['bruker']
+    recpath  = ops['save_path0']
+    ops      = ops1[0]
+
     # try tiff readers
     use_sktiff = True if ops['force_sktiff'] else use_sktiff_reader(fs[0], batch_size=ops1[0].get('batch_size'))
 
@@ -198,6 +202,7 @@ def tiff_to_binary(ops):
             if ntotal%(batch_size*4)==0:
                 print('%d frames of binary, time %0.2f sec.'%(ntotal,time.time()-t0))
         gc.collect()
+
     # write ops files
     do_registration = ops['do_registration']
     for ops in ops1:
