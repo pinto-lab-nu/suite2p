@@ -201,7 +201,7 @@ def tiff_to_binary(ops):
                         reg_file[iplane].write(bytearray(im))
                         ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
                         ops1[iplane]['nframes'] += im.shape[0]
-                        ops1[iplane]['frames_per_file'][plane_ct[iplane]] += im.shape[0]
+                        ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += im.shape[0]
                         ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
                     else:
                         reg_file_chan2[iplane].write(bytearray(im))
@@ -210,7 +210,7 @@ def tiff_to_binary(ops):
                     reg_file[iplane].write(bytearray(im))
                     ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
                     ops1[iplane]['nframes'] += im.shape[0]
-                    ops1[iplane]['frames_per_file'][plane_ct[iplane]] += im.shape[0]
+                    ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += im.shape[0]
                     ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
 
                 plane_ct[iplane] += 1 # assumes each tif "stack" is from single plane
