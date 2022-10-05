@@ -141,6 +141,7 @@ def tiff_to_binary(ops):
     # loop over all tiffs
     which_folder = -1
     ntotal=0
+    plane_ct = np.zeros(nplanes)
     for ik, file in enumerate(fs):
         # open tiff
         tif, Ltif = open_tiff(file, use_sktiff)
@@ -148,7 +149,6 @@ def tiff_to_binary(ops):
         if isbruker:
             iplane   = frameinfo['fov_ids'][ik]
             ichannel = frameinfo['channel_ids'][ik]
-            plane_ct = np.zeros(nplanes)
 
             if ops['first_tiffs'][ik]:
                 which_folder += 1
