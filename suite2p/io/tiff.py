@@ -123,8 +123,8 @@ def tiff_to_binary(ops):
 
     # open all binary files for writing and look for tiffs in all requested folders
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
-    isbruker = ops['bruker']
-    recpath  = ops['save_path0']
+    isbruker = ops1[0]['bruker']
+    recpath  = ops1[0]['save_path0']
     ops      = ops1[0]
 
     if isbruker:
@@ -198,7 +198,7 @@ def tiff_to_binary(ops):
 
                 if nchannels>1:
                     if ichannel == ops['functional_chan']:
-                        reg_file[iplane].write(bytearray(im2write))
+                        reg_file[iplane].write(bytearray(im))
                         ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
                         ops1[iplane]['nframes'] += im.shape[0]
                         ops1[iplane]['frames_per_file'][plane_ct[iplane]] += im.shape[0]
@@ -207,7 +207,7 @@ def tiff_to_binary(ops):
                         reg_file_chan2[iplane].write(bytearray(im))
                         ops1[iplane]['meanImg_chan2'] += im.mean(axis=0)
                 else:
-                    reg_file[iplane].write(bytearray(im2write))
+                    reg_file[iplane].write(bytearray(im))
                     ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
                     ops1[iplane]['nframes'] += im.shape[0]
                     ops1[iplane]['frames_per_file'][plane_ct[iplane]] += im.shape[0]

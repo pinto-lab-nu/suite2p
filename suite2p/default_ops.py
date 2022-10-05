@@ -36,7 +36,7 @@ def default_ops():
 
         # output settings
         'preclassify': 0.0,  # apply classifier before signal extraction with probability 0.3
-        'save_mat': False,  # whether to save output as matlab files
+        'save_mat': True,  # whether to save output as matlab files
         'save_NWB': False,  # whether to save output as NWB file
         'combined': True,  # combine multiple planes into a single result /single canvas for GUI
         'aspect': 1.0,  # um/pixels in X / um/pixels in Y (for correct aspect ratio in GUI)

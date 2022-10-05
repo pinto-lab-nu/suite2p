@@ -247,15 +247,21 @@ def init_ops(ops):
 
     """
 
+    xmlfile       = infer_bruker_xml_filename(ops['save_path0'])
+    ops['bruker'] = os.path.exists(os.path.join(ops['save_path0'],xmlfile))
+    print('isbruker = {}'.format(ops['bruker']))
     if ops['bruker']:
-        xmlfile   = infer_bruker_xml_filename(ops['save_path0'])
+        # xmlfile   = infer_bruker_xml_filename(ops['save_path0'])
         frameinfo = frame_info_from_bruker_xml(xmlfile)
-        nplanes   = frame_info['num_fov']
-        nchannels = frame_info['num_channel']
+        nplanes   = frameinfo['num_fov']
+        nchannels = frameinfo['num_channel']
 
     else:
         nplanes = ops['nplanes']
         nchannels = ops['nchannels']
+
+    ops['nplanes'] = nplanes
+    ops['nchannels'] = nchannels
 
     if 'lines' in ops:
         lines = ops['lines']

@@ -21,10 +21,10 @@ from functools import partial
 from pathlib import Path
 print = partial(print,flush=True)
 
-def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None, 
+def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
              run_registration=True, ops=default_ops(), stat=None):
-    """ run suite2p processing on array or BinaryRWFile 
-    
+    """ run suite2p processing on array or BinaryRWFile
+
     f_reg: required, registered or unregistered frames
         n_frames x Ly x Lx
 
@@ -43,12 +43,12 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
     ops: optional, `dict` of settings
 
     stat: optional, input predefined masks
-    
+
     """
-    
+
     plane_times = {}
     t1 = time.time()
-    
+
     # Select file for classification
     ops_classfile = ops.get('classifier_path')
     builtin_classfile = classification.builtin_classfile
@@ -68,14 +68,14 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
         # if already shifted by bidiphase, do not shift again
         if not raw and ops['do_bidiphase'] and ops['bidiphase'] != 0:
             ops['bidi_corrected'] = True
-        
+
         ######### REGISTRATION #########
         t11=time.time()
         print('----------- REGISTRATION')
         refImg = ops['refImg'] if 'refImg' in ops and ops.get('force_refImg', False) else None
-        
+
         align_by_chan2 = ops['functional_chan'] != ops['align_by_chan']
-        registration_outputs = registration.register.registration_wrapper(f_reg, f_raw=f_raw, f_reg_chan2=f_reg_chan2, f_raw_chan2=f_raw_chan2, 
+        registration_outputs = registration.register.registration_wrapper(f_reg, f_raw=f_raw, f_reg_chan2=f_reg_chan2, f_raw_chan2=f_raw_chan2,
                                                                             refImg=refImg, align_by_chan2=align_by_chan2, ops=ops)
 
         ops = registration.register.save_registration_outputs_to_ops(registration_outputs, ops)
@@ -99,7 +99,7 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
                 refImg = f_reg_chan2[inds].astype(np.float32).mean(axis=0)
             else:
                 refImg = f_reg[inds].astype(np.float32).mean(axis=0)
-            registration_outputs = registration.register.registration_wrapper(f_reg, f_raw=None, f_reg_chan2=f_reg_chan2, f_raw_chan2=None, 
+            registration_outputs = registration.register.registration_wrapper(f_reg, f_raw=None, f_reg_chan2=f_reg_chan2, f_raw_chan2=None,
                                                                                 refImg=refImg, align_by_chan2=align_by_chan2, ops=ops)
             if ops.get('ops_path'):
                 np.save(ops['ops_path'], ops)
@@ -119,7 +119,7 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
             print('Registration metrics, %0.2f sec.' % plane_times['registration_metrics'])
             if ops.get('ops_path'):
                 np.save(ops['ops_path'], ops)
-    
+
     if ops.get('roidetect', True):
         n_frames, Ly, Lx = f_reg.shape
         ######## CELL DETECTION ##############
@@ -127,12 +127,12 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
         print('----------- ROI DETECTION')
         if stat is None:
             ops, stat = detection.detection_wrapper(f_reg,
-                                                    ops=ops, 
+                                                    ops=ops,
                                                     classfile=classfile)
         plane_times['detection'] = time.time()-t11
         print('----------- Total %0.2f sec.' % plane_times['detection'])
 
-        
+
         if len(stat) > 0:
             ######## ROI EXTRACTION ##############
             t11=time.time()
@@ -153,7 +153,7 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
             else:
                 iscell = np.zeros((0, 2))
             plane_times['classification'] = time.time()-t11
-            
+
             ######### SPIKE DECONVOLUTION ###############
             fpath = ops['save_path']
             if ops.get('spikedetect', True):
@@ -186,7 +186,7 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
                 if 'meanImg_chan2' in ops:
                     np.save(os.path.join(fpath, 'F_chan2.npy'), F_chan2)
                     np.save(os.path.join(fpath, 'Fneu_chan2.npy'), Fneu_chan2)
-            
+
             # save as matlab file
             if ops.get('save_mat'):
                 stat = np.load(os.path.join(ops['save_path'], 'stat.npy'), allow_pickle=True)
@@ -204,14 +204,14 @@ def pipeline(f_reg, f_raw=None, f_reg_chan2=None, f_raw_chan2=None,
         np.save(ops['ops_path'], ops)
 
     return ops #, stat, F, Fneu, F_chan2, Fneu_chan2, spks, iscell, redcell
-    
+
 
 def run_plane(ops, ops_path=None, stat=None):
     """ run suite2p processing on a single binary file
 
     Parameters
     -----------
-    ops : :obj:`dict` 
+    ops : :obj:`dict`
         specify 'reg_file', 'nchannels', 'tau', 'fs'
 
     ops_path: str
@@ -222,21 +222,21 @@ def run_plane(ops, ops_path=None, stat=None):
 
     Returns
     --------
-    ops : :obj:`dict` 
+    ops : :obj:`dict`
     """
-    
+
     ops = {**default_ops(), **ops}
     ops['date_proc'] = datetime.now().astimezone()
-    
+
     # for running on server or on moved files, specify ops_path
     if ops_path is not None:
         ops['save_path'] = os.path.split(ops_path)[0]
-        ops['ops_path'] = ops_path 
+        ops['ops_path'] = ops_path
         if len(ops['fast_disk'])==0 or ops['save_path']!=ops['fast_disk']:
             if os.path.exists(os.path.join(ops['save_path'], 'data.bin')):
                 ops['reg_file'] = os.path.join(ops['save_path'], 'data.bin')
                 if 'reg_file_chan2' in ops:
-                    ops['reg_file_chan2'] = os.path.join(ops['save_path'], 'data_chan2.bin')    
+                    ops['reg_file_chan2'] = os.path.join(ops['save_path'], 'data_chan2.bin')
                 if 'raw_file' in ops:
                     ops['raw_file'] = os.path.join(ops['save_path'], 'data_raw.bin')
                 if 'raw_file_chan2' in ops:
@@ -267,7 +267,7 @@ def run_plane(ops, ops_path=None, stat=None):
         run_registration = False
 
     Ly, Lx = ops['Ly'], ops['Lx']
-    
+
     # get binary file paths
     raw = ops.get('keep_movie_raw') and 'raw_file' in ops and os.path.isfile(ops['raw_file'])
     reg_file = ops['reg_file']
@@ -276,25 +276,25 @@ def run_plane(ops, ops_path=None, stat=None):
         reg_file_chan2 = ops['reg_file_chan2']
         raw_file_chan2 = ops.get('raw_file_chan2', 0) if raw else reg_file_chan2
     else:
-        reg_file_chan2 = reg_file 
-        raw_file_chan2 = reg_file   
-        
+        reg_file_chan2 = reg_file
+        raw_file_chan2 = reg_file
+
 
     with io.BinaryRWFile(Ly=Ly, Lx=Lx, filename=raw_file if raw else reg_file) as f_raw, \
          io.BinaryRWFile(Ly=Ly, Lx=Lx, filename=reg_file) as f_reg, \
          io.BinaryRWFile(Ly=Ly, Lx=Lx, filename=raw_file_chan2 if raw else reg_file_chan2) as f_raw_chan2,\
-         io.BinaryRWFile(Ly=Ly, Lx=Lx, filename=reg_file_chan2) as f_reg_chan2:         
+         io.BinaryRWFile(Ly=Ly, Lx=Lx, filename=reg_file_chan2) as f_reg_chan2:
         if not raw:
             f_raw.close()
             f_raw = None
             f_raw_chan2.close()
             f_raw_chan2 = None
         if ops['nchannels'] == 1:
-            f_reg_chan2.close() 
+            f_reg_chan2.close()
             f_reg_chan2 = None
 
         ops = pipeline(f_reg, f_raw, f_reg_chan2, f_raw_chan2, run_registration, ops, stat=stat)
-        
+
     if ops.get('move_bin') and ops['save_path'] != ops['fast_disk']:
         print('moving binary files to save_path')
         shutil.move(ops['reg_file'], os.path.join(ops['save_path'], 'data.bin'))
@@ -349,7 +349,7 @@ def run_s2p(ops={}, db={}, server={}):
             ops['save_path0'] = os.path.split(ops['nwb_file'])[0]
         else:
             ops['save_path0'] = ops['data_path'][0]
-    
+
     # check if there are binaries already made
     if 'save_folder' not in ops or len(ops['save_folder'])==0:
         ops['save_folder'] = 'suite2p'
@@ -359,12 +359,12 @@ def run_s2p(ops={}, db={}, server={}):
     if len(plane_folders) > 0:
         ops_paths = [os.path.join(f, 'ops.npy') for f in plane_folders]
         ops_found_flag = all([os.path.isfile(ops_path) for ops_path in ops_paths])
-        binaries_found_flag = all([os.path.isfile(os.path.join(f, 'data_raw.bin')) or os.path.isfile(os.path.join(f, 'data.bin')) 
+        binaries_found_flag = all([os.path.isfile(os.path.join(f, 'data_raw.bin')) or os.path.isfile(os.path.join(f, 'data.bin'))
                                     for f in plane_folders])
         files_found_flag = ops_found_flag and binaries_found_flag
     else:
         files_found_flag = False
-    
+
     if files_found_flag:
         print(f'FOUND BINARIES AND OPS IN {ops_paths}')
         print('removing previous detection and extraction files, if present')
@@ -378,7 +378,7 @@ def run_s2p(ops={}, db={}, server={}):
     else:
         if len(ops['h5py']):
             ops['input_format'] = 'h5'
-            # Overwrite data_path with path provided by h5py. 
+            # Overwrite data_path with path provided by h5py.
             # Use the directory containing the first h5 file
             ops['data_path'] = [os.path.split(ops['h5py'][0])[0]]
         elif len(ops['nwb_file']):
@@ -432,17 +432,17 @@ def run_s2p(ops={}, db={}, server={}):
                 print('>>>> skipping flyback PLANE', ipl)
                 continue
             op = np.load(ops_path, allow_pickle=True).item()
-            
+
             # make sure yrange and xrange are not overwritten
             for key in default_ops().keys():
                 if key not in ['data_path', 'save_path0', 'fast_disk', 'save_folder', 'subfolders']:
                     if key in ops:
                         op[key] = ops[key]
-            
+
             print('>>>>>>>>>>>>>>>>>>>>> PLANE %d <<<<<<<<<<<<<<<<<<<<<<'%ipl)
             op = run_plane(op, ops_path=ops_path)
-            print('Plane %d processed in %0.2f sec (can open in GUI).' % 
-                    (ipl, op['timing']['total_plane_runtime']))  
+            print('Plane %d processed in %0.2f sec (can open in GUI).' %
+                    (ipl, op['timing']['total_plane_runtime']))
         run_time = time.time()-t0
         print('total = %0.2f sec.' % run_time)
 
@@ -450,7 +450,7 @@ def run_s2p(ops={}, db={}, server={}):
         if len(ops_paths)>1 and ops['combined'] and ops.get('roidetect', True):
             print('Creating combined view')
             io.combined(save_folder, save=True)
-        
+
         # save to NWB
         if ops.get('save_NWB'):
             print('Saving in nwb format')
