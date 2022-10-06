@@ -265,6 +265,8 @@ def run_plane(ops, ops_path=None, stat=None):
         print("NOTE: not running registration, ops['do_registration']=0")
         print('binary path: %s'%ops['reg_file'])
         run_registration = False
+        if 'meanImgE' not in ops:
+            ops['meanImgE'] = ops['meanImg']
 
     Ly, Lx = ops['Ly'], ops['Lx']
 

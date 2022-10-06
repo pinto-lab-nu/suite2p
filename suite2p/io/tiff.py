@@ -144,6 +144,7 @@ def tiff_to_binary(ops):
     plane_ct = np.zeros(nplanes)
     for ik, file in enumerate(fs):
         # open tiff
+        print('opening file {}'.format(file))
         tif, Ltif = open_tiff(file, use_sktiff)
 
         if isbruker:
@@ -189,7 +190,7 @@ def tiff_to_binary(ops):
             nframes = im.shape[0]
 
             if isbruker:
-                if ik==0 and ix==0 and plane_ct[iplane]==0:
+                if plane_ct[iplane]==0:
                     ops1[iplane]['nframes'] = 0
                     ops1[iplane]['frames_per_file'] = np.zeros((len(fs),), dtype=int)
                     ops1[iplane]['meanImg'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
@@ -209,11 +210,11 @@ def tiff_to_binary(ops):
                 else:
                     reg_file[iplane].write(bytearray(im))
                     ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
-                    ops1[iplane]['nframes'] += im.shape[0]
-                    ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += im.shape[0]
+                    ops1[iplane]['nframes'] += nframes
+                    ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += nframes
                     ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
 
-                plane_ct[iplane] += 1 # assumes each tif "stack" is from single plane
+                plane_ct[iplane] += nframes # assumes each tif "stack" is from single plane
 
             else:
                 for j in range(0,nplanes):
@@ -243,10 +244,10 @@ def tiff_to_binary(ops):
 
                 iplane = (iplane-nframes/nchannels)%nplanes
 
-        ix+=nframes
-        ntotal+=nframes
-        if ntotal%(batch_size*4)==0:
-            print('%d frames of binary, time %0.2f sec.'%(ntotal,time.time()-t0))
+            ix+=nframes
+            ntotal+=nframes
+            if ntotal%(batch_size*4)==0:
+                print('%d frames of binary, time %0.2f sec.'%(ntotal,time.time()-t0))
     gc.collect()
 
     # write ops files
