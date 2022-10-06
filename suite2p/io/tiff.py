@@ -445,8 +445,8 @@ def ome_to_binary(ops):
 
     # open all binary files for writing and look for tiffs in all requested folders
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
-    isbruker = ops['bruker']
-    recpath  = ops['save_path0']
+    isbruker = ops1[0]['bruker']
+    recpath  = ops1[0]['save_path0']
     ops      = ops1[0]
 
     fs_Ch1, fs_Ch2 = [], []
