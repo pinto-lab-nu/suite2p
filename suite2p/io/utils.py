@@ -336,6 +336,15 @@ def frame_info_from_bruker_xml(xmlfile):
     xml_data    = et.parse(xmlfile)
     root        = xml_data.getroot()
     sequence    = root.findall('./Sequence')
+    header      = root.findall('./PVStateShard/PVStateValue')
+    # find starting position to use as default if recording is single_position
+    # Note: Not sure if this works properly for multiple cycle recordings
+    start_pos   = []
+    for attr in header:
+        if attr.attrib['key'] == 'positionCurrent':
+            for subattr in attr.findall('./SubindexedValues'):
+                for ipos in subattr.findall('./SubindexedValue'):
+                    start_pos.append(float(ipos.get('value')))
     channel_num = []
     cycle_num   = []
     file_name   = []
@@ -361,16 +370,14 @@ def frame_info_from_bruker_xml(xmlfile):
                     for ipos in subattr.findall('./SubindexedValue'):
                         this_pos.append(float(ipos.get('value')))
                 pos.append(this_pos)
+            else:
+                pos.append(start_pos)
 
     # define fov number based on the unique combination of x-y-z coordinates
     posa        = np.array(pos)
     unique_locs = np.unique(posa,axis=0)
-    if unique_locs.size == 0: # Workaround to deal with single view xml files
-        num_coord = 1
-        num_fov = 1
-    else:
-        num_coord   = np.size(unique_locs,axis=1)
-        num_fov     = np.size(unique_locs,axis=0)
+    num_coord   = np.size(unique_locs,axis=1)
+    num_fov     = np.size(unique_locs,axis=0)
     fov_id      = []
 
     for iFrame in range(len(pos)):
