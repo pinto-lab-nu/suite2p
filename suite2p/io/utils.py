@@ -365,8 +365,12 @@ def frame_info_from_bruker_xml(xmlfile):
     # define fov number based on the unique combination of x-y-z coordinates
     posa        = np.array(pos)
     unique_locs = np.unique(posa,axis=0)
-    num_coord   = np.size(unique_locs,axis=1)
-    num_fov     = np.size(unique_locs,axis=0)
+    if unique_locs.size == 0: # Workaround to deal with single view xml files
+        num_coord = 1
+        num_fov = 1
+    else:
+        num_coord   = np.size(unique_locs,axis=1)
+        num_fov     = np.size(unique_locs,axis=0)
     fov_id      = []
 
     for iFrame in range(len(pos)):
