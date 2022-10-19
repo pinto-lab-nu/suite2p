@@ -405,5 +405,7 @@ def infer_bruker_xml_filename(recpath):
         if recpath.rfind('/') == len(recpath)-1:
             recpath = recpath[:-1]
         xmlname = '{}.xml'.format(recpath[recpath.rfind('/')+1:])
-
+        
+    # Return the full path to the file - PS 10/22
+    xmlname =  os.path.join(recpath,xmlname)
     return xmlname
