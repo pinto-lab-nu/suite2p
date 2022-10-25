@@ -370,8 +370,10 @@ def frame_info_from_bruker_xml(xmlfile):
                     for ipos in subattr.findall('./SubindexedValue'):
                         this_pos.append(float(ipos.get('value')))
                 pos.append(this_pos)
-            else:
-                pos.append(start_pos)
+
+    if not pos:
+        for itimes in range(len(frame_time)):
+            pos.append(start_pos)
 
     # define fov number based on the unique combination of x-y-z coordinates
     posa        = np.array(pos)
