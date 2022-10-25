@@ -144,7 +144,7 @@ def tiff_to_binary(ops):
     plane_ct = np.zeros(nplanes)
     for ik, file in enumerate(fs):
         # open tiff
-        print('opening file {}'.format(file))
+        # print('opening file {}'.format(file))
         tif, Ltif = open_tiff(file, use_sktiff)
 
         if isbruker:
