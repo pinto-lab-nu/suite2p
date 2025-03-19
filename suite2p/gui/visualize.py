@@ -7,12 +7,12 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QStyle 
 from PyQt5.QtWidgets import QWidget, QSlider, QMainWindow, QGridLayout, QStyleOptionSlider, QApplication, QLabel, QLineEdit, QPushButton, QComboBox, QCheckBox
 from matplotlib import cm
-from rastermap.mapping import Rastermap
+from rastermap import Rastermap
+# from rastermap.mapping import Rastermap
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import zscore
 
 from . import masks
-
 
 # custom vertical label
 class VerticalLabel(QWidget):
