@@ -30,7 +30,7 @@ def default_ops():
         # main settings
         'nplanes' : 1,  # each tiff has these many planes in sequence
         'nchannels' : 1,  # each tiff has these many channels per plane
-        'functional_chan' : 1,  # this channel is used to extract functional ROIs (1-based)
+        'functional_chan' : 2,  # this channel is used to extract functional ROIs (1-based)
         'tau':  1.,  # this is the main parameter for deconvolution
         'fs': 10.,  # sampling rate (PER PLANE e.g. for 12 plane recordings it will be around 2.5)
         'force_sktiff': False, # whether or not to use scikit-image for tiff reading
@@ -40,9 +40,9 @@ def default_ops():
 
         # output settings
         'preclassify': 0.0,  # apply classifier before signal extraction with probability 0.3
-        'save_mat': False,  # whether to save output as matlab files
+        'save_mat': True,  # whether to save output as matlab files
         'save_NWB': False,  # whether to save output as NWB file
-        'combined': True,  # combine multiple planes into a single result /single canvas for GUI
+        'combined': False,  # combine multiple planes into a single result /single canvas for GUI
         'aspect': 1.0,  # um/pixels in X / um/pixels in Y (for correct aspect ratio in GUI)
 
         # bidirectional phase offset
