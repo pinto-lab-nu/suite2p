@@ -492,7 +492,7 @@ def infer_bruker_xml_filename(recpath):
     Infers bruker xml file name based on path.
     added by LP in sep 2022
     """
-
+    # print(recpath)
     # bruker xmls have the same name as their parent directory by default
     if recpath.find('/') == -1:
         if recpath.rfind('\\') == len(recpath)-1:

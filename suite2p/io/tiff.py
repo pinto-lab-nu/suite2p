@@ -174,7 +174,7 @@ def tiff_to_binary(ops):
     ops      = ops1[0]
 
     if isbruker:
-        xmlfile   = utils.infer_bruker_xml_filename(ops['save_path0'])
+        xmlfile   = utils.infer_bruker_xml_filename(ops['data_path'][0])
         frameinfo = utils.frame_info_from_bruker_xml(xmlfile)
 
     # try tiff readers
@@ -187,14 +187,35 @@ def tiff_to_binary(ops):
     # loop over all tiffs
     which_folder = -1
     ntotal = 0
+    plane_ct = np.zeros(nplanes)
+    
     for ik, file in enumerate(fs):
         # open tiff
         # print('opening file {}'.format(file))
         tif, Ltif = open_tiff(file, use_sktiff)
         # keep track of the plane identity of the first frame (channel identity is assumed always 0)
-        if ops["first_tiffs"][ik]:
-            which_folder += 1
-            iplane = 0
+        if isbruker:
+ 
+            iplane   = frameinfo['fov_ids'][ik]
+ 
+            ichannel = frameinfo['channel_ids'][ik]
+ 
+
+ 
+            if ops['first_tiffs'][ik]:
+ 
+                which_folder += 1
+ 
+        else:
+ 
+            # keep track of the plane identity of the first frame (channel identity is assumed always 0)
+ 
+            if ops['first_tiffs'][ik]:
+ 
+                which_folder += 1
+ 
+                iplane = 0
+
         ix = 0
         while 1:
             im = read_tiff(file, tif, Ltif, ix, batch_size, use_sktiff)
@@ -439,21 +460,45 @@ def ome_to_binary(ops):
     # open all binary files for writing and look for tiffs in all requested folders
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
     ops = ops1[0]
+    isbruker = ops1[0]['bruker']
     batch_size = ops["batch_size"]
     use_sktiff = not HAS_SCANIMAGE
 
     fs_Ch1, fs_Ch2 = [], []
-    for f in fs:
-        if f.find("Ch1") > -1:
-            if ops["functional_chan"] == 1:
-                fs_Ch1.append(f)
-            else:
-                fs_Ch2.append(f)
+    if isbruker:
+ 
+        xmlfile   = utils.infer_bruker_xml_filename(ops['data_path'][0])
+ 
+        frameinfo = utils.frame_info_from_bruker_xml(xmlfile)
+ 
+        if ops['functional_chan'] == 1:
+ 
+            fs_Ch1   = f[frameinfo['channel_ids']==1]
+ 
+            fs_Ch2   = f[frameinfo['channel_ids']==2]
+ 
+            func_idx = frameinfo['channel_ids']==1
+ 
         else:
-            if ops["functional_chan"] == 1:
-                fs_Ch2.append(f)
+ 
+            fs_Ch1   = f[frameinfo['channel_ids']==2]
+ 
+            fs_Ch2   = f[frameinfo['channel_ids']==1]
+ 
+            func_idx = frameinfo['channel_ids']==2
+ 
+    else:
+        for f in fs:
+            if f.find("Ch1") > -1:
+                if ops["functional_chan"] == 1:
+                    fs_Ch1.append(f)
+                else:
+                    fs_Ch2.append(f)
             else:
-                fs_Ch1.append(f)
+                if ops["functional_chan"] == 1:
+                    fs_Ch2.append(f)
+                else:
+                    fs_Ch1.append(f)
 
     if len(fs_Ch2) == 0:
         ops1[0]["nchannels"] = 1
@@ -478,18 +523,22 @@ def ome_to_binary(ops):
         ops1_0["meanImg"] = np.zeros(shape, np.float32)
         if nchannels > 1:
             ops1_0["meanImg_chan2"] = np.zeros(shape, np.float32)
-
-    bruker_bidirectional = ops.get("bruker_bidirectional", False)
-    iplanes = np.arange(0, nplanes)
-    if not bruker_bidirectional:
-        iplanes = np.tile(iplanes[np.newaxis, :],
-                          int(np.ceil(len(fs_Ch1) / nplanes))).flatten()
-        iplanes = iplanes[:len(fs_Ch1)]
+    if isbruker:
+ 
+        iplanes = frame_info['fov_ids'][func_idx]
+ 
     else:
-        iplanes = np.hstack((iplanes, iplanes[::-1]))
-        iplanes = np.tile(iplanes[np.newaxis, :],
-                          int(np.ceil(len(fs_Ch1) / (2 * nplanes)))).flatten()
-        iplanes = iplanes[:len(fs_Ch1)]
+        bruker_bidirectional = ops.get("bruker_bidirectional", False)
+        iplanes = np.arange(0, nplanes)
+        if not bruker_bidirectional:
+            iplanes = np.tile(iplanes[np.newaxis, :],
+                            int(np.ceil(len(fs_Ch1) / nplanes))).flatten()
+            iplanes = iplanes[:len(fs_Ch1)]
+        else:
+            iplanes = np.hstack((iplanes, iplanes[::-1]))
+            iplanes = np.tile(iplanes[np.newaxis, :],
+                            int(np.ceil(len(fs_Ch1) / (2 * nplanes)))).flatten()
+            iplanes = iplanes[:len(fs_Ch1)]
 
     itot = 0
     for ik, file in enumerate(fs_Ch1):
