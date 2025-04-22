@@ -182,7 +182,8 @@ def tiff_to_binary(ops):
         fs[0], batch_size=ops1[0].get("batch_size"))
 
     batch_size = ops["batch_size"]
-    batch_size = nplanes * nchannels * math.ceil(batch_size / (nplanes * nchannels))
+    if ~isbruker:
+        batch_size = nplanes * nchannels * math.ceil(batch_size / (nplanes * nchannels))
 
     # loop over all tiffs
     which_folder = -1
@@ -195,21 +196,18 @@ def tiff_to_binary(ops):
         tif, Ltif = open_tiff(file, use_sktiff)
         # keep track of the plane identity of the first frame (channel identity is assumed always 0)
         if isbruker:
- 
             iplane   = frameinfo['fov_ids'][ik] 
             ichannel = frameinfo['channel_ids'][ik]
- 
             if ops['first_tiffs'][ik]:
- 
                 which_folder += 1
  
         else:
- 
             # keep track of the plane identity of the first frame (channel identity is assumed always 0)
- 
             if ops['first_tiffs'][ik]:
                 which_folder += 1
                 iplane = 0
+
+        # ix = iplane
 
         ix = 0
         while 1:
@@ -222,7 +220,7 @@ def tiff_to_binary(ops):
             if isbruker:
                 if plane_ct[iplane]==0:
                     ops1[iplane]['nframes'] = 0
-                    ops1[iplane]['frames_per_file'] = np.zeros((nframes * len(fs),), dtype=int)
+                    ops1[iplane]['frames_per_file'] = np.zeros((len(fs),), dtype=int)
                     ops1[iplane]['meanImg'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
                     if nchannels>1:
                         ops1[iplane]['meanImg_chan2'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
