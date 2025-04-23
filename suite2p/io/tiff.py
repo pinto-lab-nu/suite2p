@@ -196,13 +196,15 @@ def tiff_to_binary(ops):
         tif, Ltif = open_tiff(file, use_sktiff)
         # keep track of the plane identity of the first frame (channel identity is assumed always 0)
         if isbruker:
-            iplane   = frameinfo['fov_ids'][ik] 
+            plane_order = frameinfo['fov_ids'][(nplanes*ik):(nplanes*ik+nplanes)]
+            # iplane   = frameinfo['fov_ids'][ik] 
             ichannel = frameinfo['channel_ids'][ik]
             if ops['first_tiffs'][ik]:
                 which_folder += 1
  
         else:
             # keep track of the plane identity of the first frame (channel identity is assumed always 0)
+            plane_order = [0]
             if ops['first_tiffs'][ik]:
                 which_folder += 1
                 iplane = 0
@@ -210,71 +212,86 @@ def tiff_to_binary(ops):
         # ix = iplane
 
         ix = 0
+        # plane_idx = 0
         while 1:
             # tiff reading
             im = read_tiff(file, tif, Ltif, ix, batch_size, use_sktiff)
             if im is None:
                 break
 
+
             nframes = im.shape[0]
-            if isbruker:
-                if plane_ct[iplane]==0:
-                    ops1[iplane]['nframes'] = 0
-                    ops1[iplane]['frames_per_file'] = np.zeros((len(fs),), dtype=int)
-                    ops1[iplane]['meanImg'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
+            # nframes = im.shape[0] / Ltif if Ltif > 0 else im.shape[0]
+            for plane_idx in plane_order:
+                iplane = plane_order[plane_idx] if isbruker else iplane
+
+                if nplanes > 1:
+                    current_im = im[plane_idx:plane_idx+1, :, :]
+                else:
+                    current_im = im
+
+                if isbruker:
+                    if plane_ct[iplane]==0:
+                        ops1[iplane]['nframes'] = 0
+                        ops1[iplane]['frames_per_file'] = np.zeros((len(fs),), dtype=int)
+                        ops1[iplane]['meanImg'] = np.zeros((current_im.shape[1], current_im.shape[2]), np.float32)
+
+                        # This if block is not debugged yet
+                        if nchannels>1:
+                            ops1[iplane]['meanImg_chan2'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
+
+                    # Multi-channel not yet fixed for 2 planes
                     if nchannels>1:
-                        ops1[iplane]['meanImg_chan2'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
-  
-                if nchannels>1:
-                    if ichannel == ops['functional_chan']:
-                        reg_file[iplane].write(bytearray(im))
-                        ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
-                        ops1[iplane]['nframes'] += im.shape[0]
-                        ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += im.shape[0]
-                        ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
- 
+                        if ichannel == ops['functional_chan']:
+                            reg_file[iplane].write(bytearray(im))
+                            ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
+                            ops1[iplane]['nframes'] += im.shape[0]
+                            ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += im.shape[0]
+                            ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
+    
+                        else:
+                            reg_file_chan2[iplane].write(bytearray(im))
+                            ops1[iplane]['meanImg_chan2'] += im.mean(axis=0)
+
                     else:
-                        reg_file_chan2[iplane].write(bytearray(im))
-                        ops1[iplane]['meanImg_chan2'] += im.mean(axis=0)
+                        reg_file[iplane].write(bytearray(current_im))
+                        ops1[iplane]['meanImg'] += current_im.astype(np.float32).sum(axis=0)
+                        ops1[iplane]['nframes'] += current_im.shape[0]
+                        # ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += current_im.shape[0]
+                        ops1[iplane]['frames_per_file'][ik] += current_im.shape[0]
+                        ops1[iplane]['frames_per_folder'][which_folder] += current_im.shape[0]
+                    
+                    plane_ct[iplane] += current_im.shape[0] # assumes each tif "stack" is from single plane
 
                 else:
-                    reg_file[iplane].write(bytearray(im))
-                    ops1[iplane]['meanImg'] += im.astype(np.float32).sum(axis=0)
-                    ops1[iplane]['nframes'] += nframes
-                    ops1[iplane]['frames_per_file'][int(plane_ct[iplane])] += nframes
-                    ops1[iplane]['frames_per_folder'][which_folder] += im.shape[0]
-                
-                plane_ct[iplane] += nframes # assumes each tif "stack" is from single plane
-
-            else:
-                for j in range(0, nplanes):
-                    if ik == 0 and ix == 0:
-                        ops1[j]["nframes"] = 0
-                        ops1[j]["frames_per_file"] = np.zeros((len(fs),), dtype=int)
-                        ops1[j]["meanImg"] = np.zeros((im.shape[1], im.shape[2]),
-                                                    np.float32)
+                    for j in range(0, nplanes):
+                        if ik == 0 and ix == 0:
+                            ops1[j]["nframes"] = 0
+                            ops1[j]["frames_per_file"] = np.zeros((len(fs),), dtype=int)
+                            ops1[j]["meanImg"] = np.zeros((im.shape[1], im.shape[2]),
+                                                        np.float32)
+                            if nchannels > 1:
+                                ops1[j]["meanImg_chan2"] = np.zeros((im.shape[1], im.shape[2]),
+                                                                    np.float32)
+                        i0 = nchannels * ((iplane + j) % nplanes)
                         if nchannels > 1:
-                            ops1[j]["meanImg_chan2"] = np.zeros((im.shape[1], im.shape[2]),
-                                                                np.float32)
-                    i0 = nchannels * ((iplane + j) % nplanes)
-                    if nchannels > 1:
-                        nfunc = ops["functional_chan"] - 1
-                    else:
-                        nfunc = 0
-                    im2write = im[int(i0) + nfunc:nframes:nplanes * nchannels]
+                            nfunc = ops["functional_chan"] - 1
+                        else:
+                            nfunc = 0
+                        im2write = im[int(i0) + nfunc:nframes:nplanes * nchannels]
 
-                    reg_file[j].write(bytearray(im2write))
-                    ops1[j]["meanImg"] += im2write.astype(np.float32).sum(axis=0)
-                    ops1[j]["nframes"] += im2write.shape[0]
-                    ops1[j]["frames_per_file"][ik] += im2write.shape[0]
-                    ops1[j]["frames_per_folder"][which_folder] += im2write.shape[0]
-                    #print(ops1[j]["frames_per_folder"][which_folder])
-                    if nchannels > 1:
-                        im2write = im[int(i0) + 1 - nfunc:nframes:nplanes * nchannels]
-                        reg_file_chan2[j].write(bytearray(im2write))
-                        ops1[j]["meanImg_chan2"] += im2write.mean(axis=0)
-                iplane = (iplane - nframes / nchannels) % nplanes
-            
+                        reg_file[j].write(bytearray(im2write))
+                        ops1[j]["meanImg"] += im2write.astype(np.float32).sum(axis=0)
+                        ops1[j]["nframes"] += im2write.shape[0]
+                        ops1[j]["frames_per_file"][ik] += im2write.shape[0]
+                        ops1[j]["frames_per_folder"][which_folder] += im2write.shape[0]
+                        #print(ops1[j]["frames_per_folder"][which_folder])
+                        if nchannels > 1:
+                            im2write = im[int(i0) + 1 - nfunc:nframes:nplanes * nchannels]
+                            reg_file_chan2[j].write(bytearray(im2write))
+                            ops1[j]["meanImg_chan2"] += im2write.mean(axis=0)
+                    iplane = (iplane - nframes / nchannels) % nplanes
+                
             ix += nframes
             ntotal += nframes
             if ntotal % (batch_size * 4) == 0:
