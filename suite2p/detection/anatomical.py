@@ -11,6 +11,7 @@ from cellpose.transforms import normalize99
 import time
 import cv2
 import os
+from pathlib import Path
 
 from . import utils
 from .stats import roi_stats
@@ -102,6 +103,12 @@ def refine_masks(stats, patches, seeds, diam, Lyc, Lxc):
 def roi_detect(mproj, diameter=None, cellprob_threshold=0.0, flow_threshold=1.5,
                pretrained_model=None):
     pretrained_model = "cyto3" if pretrained_model is None else pretrained_model
+    
+    # Resolve path to model file relative to this script
+    HERE = Path(__file__).parent  # directory containing anatomical.py
+    model_dir = HERE / ".." / "models"
+    pretrained_model = str((model_dir / pretrained_model).resolve())
+
     if not os.path.exists(pretrained_model):
         model = Cellpose(model_type=pretrained_model)
     else:

@@ -224,7 +224,7 @@ class RunWindow(QDialog):
         #saveOps.clicked.connect(self.save_ops)
         self.opsbtns = QButtonGroup(self)
         opsstr = ["1P imaging", "dendrites/axons"]
-        self.opsname = ["1P", "dendrite"]
+        self.opsname = ["1P", "axon"]
         for b in range(len(opsstr)):
             btn = OpsButton(b, opsstr[b], self)
             self.opsbtns.addButton(btn, b)
