@@ -1,6 +1,7 @@
 """
 Copyright © 2023 Howard Hughes Medical Institute, Authored by Carsen Stringer and Marius Pachitariu.
 """
+
 import os
 from natsort import natsorted
 import numpy as np
@@ -9,13 +10,13 @@ import scipy
 import pathlib
 
 
-def save_mat(ops, stat, F, Fneu, spks, iscell, redcell,
-             F_chan2=None, Fneu_chan2=None):
+def save_mat(ops, stat, F, Fneu, spks, iscell, redcell, F_chan2=None, Fneu_chan2=None):
     ops_matlab = ops.copy()
     if ops_matlab.get("date_proc"):
         try:
             ops_matlab["date_proc"] = str(
-                datetime.strftime(ops_matlab["date_proc"], "%Y-%m-%d %H:%M:%S.%f"))
+                datetime.strftime(ops_matlab["date_proc"], "%Y-%m-%d %H:%M:%S.%f")
+            )
         except:
             pass
     for k in ops_matlab.keys():
@@ -30,18 +31,21 @@ def save_mat(ops, stat, F, Fneu, spks, iscell, redcell,
 
     if F_chan2 is None:
         scipy.io.savemat(
-            file_name=os.path.join(ops["save_path"], "Fall.mat"), mdict={
+            file_name=os.path.join(ops["save_path"], "Fall.mat"),
+            mdict={
                 "stat": stat,
                 "ops": ops_matlab,
                 "F": F,
                 "Fneu": Fneu,
                 "spks": spks,
                 "iscell": iscell,
-                "redcell": redcell
-            })
+                "redcell": redcell,
+            },
+        )
     else:
         scipy.io.savemat(
-            file_name=os.path.join(ops["save_path"], "Fall.mat"), mdict={
+            file_name=os.path.join(ops["save_path"], "Fall.mat"),
+            mdict={
                 "stat": stat,
                 "ops": ops_matlab,
                 "F": F,
@@ -50,8 +54,9 @@ def save_mat(ops, stat, F, Fneu, spks, iscell, redcell,
                 "iscell": iscell,
                 "redcell": redcell,
                 "F_chan2": F_chan2,
-                "Fneu_chan2": Fneu_chan2
-            })
+                "Fneu_chan2": Fneu_chan2,
+            },
+        )
 
 
 def compute_dydx(ops1):
@@ -88,7 +93,7 @@ def compute_dydx(ops1):
 
 
 def combined(save_folder, save=True):
-    """ Combines all the folders in save_folder into a single result file.
+    """Combines all the folders in save_folder into a single result file.
 
     can turn off saving (for gui loading)
 
@@ -96,9 +101,13 @@ def combined(save_folder, save=True):
     Multi-roi recordings are arranged by their dx,dy physical localization.
     Multi-plane / multi-roi recordings are tiled after using dx,dy.
     """
-    plane_folders = natsorted([
-        f.path for f in os.scandir(save_folder) if f.is_dir() and f.name[:5] == "plane"
-    ])
+    plane_folders = natsorted(
+        [
+            f.path
+            for f in os.scandir(save_folder)
+            if f.is_dir() and f.name[:5] == "plane"
+        ]
+    )
     ops1 = [
         np.load(os.path.join(f, "ops.npy"), allow_pickle=True).item()
         for f in plane_folders
@@ -134,8 +143,9 @@ def combined(save_folder, save=True):
             if "meanImg_chan2" in ops:
                 meanImg_chan2[np.ix_(yrange, xrange)] = ops["meanImg_chan2"]
         if "meanImg_chan2_corrected" in ops:
-            meanImg_chan2_corrected[np.ix_(yrange,
-                                           xrange)] = ops["meanImg_chan2_corrected"]
+            meanImg_chan2_corrected[np.ix_(yrange, xrange)] = ops[
+                "meanImg_chan2_corrected"
+            ]
 
         xrange = np.arange(dx[k] + ops["xrange"][0], dx[k] + ops["xrange"][-1])
         yrange = np.arange(dy[k] + ops["yrange"][0], dy[k] + ops["yrange"][-1])
@@ -161,13 +171,20 @@ def combined(save_folder, save=True):
         nn, nt = F0.shape
         if nt < Nfr:
             fcat = np.zeros((nn, Nfr - nt), "float32")
-            #print(F0.shape)
-            #print(fcat.shape)
+            # print(F0.shape)
+            # print(fcat.shape)
             F0 = np.concatenate((F0, fcat), axis=1)
             spks0 = np.concatenate((spks0, fcat), axis=1)
             Fneu0 = np.concatenate((Fneu0, fcat), axis=1)
         if ii == 0:
-            F, Fneu, spks, stat, iscell, redcell = F0, Fneu0, spks0, stat0, iscell0, redcell0
+            F, Fneu, spks, stat, iscell, redcell = (
+                F0,
+                Fneu0,
+                spks0,
+                stat0,
+                iscell0,
+                redcell0,
+            )
         else:
             F = np.concatenate((F, F0))
             Fneu = np.concatenate((Fneu, Fneu0))
@@ -178,7 +195,9 @@ def combined(save_folder, save=True):
                 redcell = np.concatenate((redcell, redcell0))
         ii += 1
         print("appended plane %d to combined view" % k)
-    # print(meanImg_chan2.shape)
+    if ops["nchannels"] > 1:
+        if "meanImg_chan2" in ops:
+            print(meanImg_chan2.shape)
     ops["meanImg"] = meanImg
     ops["meanImgE"] = meanImgE
     if ops["nchannels"] > 1:
@@ -219,6 +238,15 @@ def combined(save_folder, save=True):
             matpath = os.path.join(ops["save_path"], "Fall.mat")
             save_mat(ops, stat, F, Fneu, spks, iscell, redcell)
 
-    return (stat, ops, F, Fneu, spks, 
-            iscell[:,0], iscell[:,1], 
-            redcell[:,0], redcell[:,1], hasred)
+    return (
+        stat,
+        ops,
+        F,
+        Fneu,
+        spks,
+        iscell[:, 0],
+        iscell[:, 1],
+        redcell[:, 0],
+        redcell[:, 1],
+        hasred,
+    )
